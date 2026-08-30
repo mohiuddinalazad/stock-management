@@ -9,6 +9,8 @@ const STORAGE_KEY_URL = "stock_mgmt_sheet_url";
 const STORAGE_KEY_SCRIPT_URL = "stock_mgmt_script_url";
 const STORAGE_KEY_DATA = "stock_mgmt_items_cache";
 const STORAGE_KEY_CUSTOM_EDITS = "stock_mgmt_custom_edits";
+const STORAGE_KEY_AUTH = "stock_mgmt_auth_status";
+const APP_PASSWORD = "Mohiuddin";
 
 // Initial Pre-loaded Dataset Extracted from Google Sheet for Immediate Standalone Loading
 const INITIAL_CACHED_ITEMS = [
@@ -199,9 +201,104 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initApp() {
   initTheme();
+  setupLockscreen();
   loadSavedConfig();
   setupEventListeners();
   fetchOrLoadStockData();
+}
+
+// SECURITY & LOCKSCREEN LOGIC
+function setupLockscreen() {
+  const overlay = document.getElementById("lockscreenOverlay");
+  const form = document.getElementById("lockscreenForm");
+  const input = document.getElementById("lockPasswordInput");
+  const btnTogglePwd = document.getElementById("btnTogglePwd");
+  const eyeIcon = document.getElementById("eyeIcon");
+  const errorMsg = document.getElementById("lockErrorMsg");
+  const rememberCheckbox = document.getElementById("rememberAuthCheckbox");
+
+  // Check existing session
+  const isAuth = localStorage.getItem(STORAGE_KEY_AUTH) === "authenticated" || 
+                 sessionStorage.getItem(STORAGE_KEY_AUTH) === "authenticated";
+
+  if (isAuth) {
+    if (overlay) overlay.classList.add("unlocked");
+  } else {
+    if (overlay) {
+      overlay.classList.remove("unlocked");
+      setTimeout(() => input && input.focus(), 300);
+    }
+  }
+
+  // Toggle password visibility
+  if (btnTogglePwd && input) {
+    btnTogglePwd.addEventListener("click", () => {
+      const isPassword = input.type === "password";
+      input.type = isPassword ? "text" : "password";
+      if (eyeIcon) {
+        eyeIcon.className = isPassword ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+      }
+    });
+  }
+
+  // Handle Unlock Submission
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      handleUnlockSubmit();
+    });
+  }
+
+  const btnUnlock = document.getElementById("btnUnlock");
+  if (btnUnlock) {
+    btnUnlock.addEventListener("click", handleUnlockSubmit);
+  }
+
+  function handleUnlockSubmit() {
+    const entered = input.value.trim();
+    if (entered === APP_PASSWORD) {
+      if (errorMsg) errorMsg.classList.add("hidden");
+      
+      const remember = rememberCheckbox && rememberCheckbox.checked;
+      if (remember) {
+        localStorage.setItem(STORAGE_KEY_AUTH, "authenticated");
+      } else {
+        sessionStorage.setItem(STORAGE_KEY_AUTH, "authenticated");
+      }
+
+      if (overlay) overlay.classList.add("unlocked");
+      showToast("Welcome! Dashboard Unlocked.", "success");
+      input.value = "";
+    } else {
+      const card = overlay.querySelector(".lockscreen-card");
+      if (card) {
+        card.classList.remove("shake");
+        void card.offsetWidth; // trigger reflow
+        card.classList.add("shake");
+      }
+      if (errorMsg) errorMsg.classList.remove("hidden");
+      input.value = "";
+      input.focus();
+    }
+  }
+}
+
+function lockDashboard() {
+  localStorage.removeItem(STORAGE_KEY_AUTH);
+  sessionStorage.removeItem(STORAGE_KEY_AUTH);
+  const overlay = document.getElementById("lockscreenOverlay");
+  const input = document.getElementById("lockPasswordInput");
+  const errorMsg = document.getElementById("lockErrorMsg");
+
+  if (errorMsg) errorMsg.classList.add("hidden");
+  if (overlay) {
+    overlay.classList.remove("unlocked");
+    if (input) {
+      input.value = "";
+      setTimeout(() => input.focus(), 300);
+    }
+  }
+  showToast("Dashboard locked.", "info");
 }
 
 // THEME LOGIC
@@ -1387,6 +1484,10 @@ function setupEventListeners() {
   // Theme Toggle
   const btnTheme = document.getElementById("btnToggleTheme");
   if (btnTheme) btnTheme.addEventListener("click", toggleTheme);
+
+  // Security Lock
+  const btnLock = document.getElementById("btnLockApp");
+  if (btnLock) btnLock.addEventListener("click", lockDashboard);
 
   // Filters & Search
   document.getElementById("searchInput").addEventListener("input", renderCurrentView);

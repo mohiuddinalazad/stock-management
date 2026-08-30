@@ -66,8 +66,49 @@
       <button class="btn btn-outline" id="btnExport">
         <i class="fa-solid fa-download"></i> Export CSV
       </button>
+
+      <button class="btn btn-outline" id="btnLockApp" title="Lock Dashboard">
+        <i class="fa-solid fa-lock"></i> Lock
+      </button>
     </div>
   </header>
+
+  <!-- Security Password Lockscreen Overlay -->
+  <div class="lockscreen-overlay" id="lockscreenOverlay">
+    <div class="lockscreen-card">
+      <div class="lockscreen-icon-wrap">
+        <div class="lockscreen-icon-ring"></div>
+        <i class="fa-solid fa-shield-halved lockscreen-icon"></i>
+      </div>
+      <h2 class="lockscreen-title">Access Protected</h2>
+      <p class="lockscreen-subtitle">Components Stock Management System</p>
+      
+      <form id="lockscreenForm" class="lockscreen-form" onsubmit="return false;">
+        <div class="lockscreen-input-group">
+          <i class="fa-solid fa-key lock-input-icon"></i>
+          <input type="password" id="lockPasswordInput" class="lockscreen-input" placeholder="Enter Password" autocomplete="current-password" required>
+          <button type="button" class="btn-toggle-pwd" id="btnTogglePwd" title="Show/Hide Password">
+            <i class="fa-solid fa-eye" id="eyeIcon"></i>
+          </button>
+        </div>
+        
+        <div class="lockscreen-options">
+          <label class="remember-label">
+            <input type="checkbox" id="rememberAuthCheckbox" checked>
+            <span>Remember login on this device</span>
+          </label>
+        </div>
+
+        <div class="lockscreen-error hidden" id="lockErrorMsg">
+          <i class="fa-solid fa-circle-exclamation"></i> Incorrect Password! Please try again.
+        </div>
+
+        <button type="submit" class="btn btn-primary lockscreen-submit-btn" id="btnUnlock">
+          <i class="fa-solid fa-lock-open"></i> Unlock Dashboard
+        </button>
+      </form>
+    </div>
+  </div>
 
   <!-- Google Sheet Link Banner Bar -->
   <div class="sheet-banner-bar">
