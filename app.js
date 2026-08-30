@@ -4,7 +4,7 @@
  */
 
 // Default Spreadsheet URL and ID
-const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1b4oENM0Ez94YTgqiwtJ2cDheZCfxUd-RQzqeSiA84_jc/edit?usp=sharing";
+const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1B4oENM0Ez94YTgqiwtJ2cDheZCfUd-RQzqeSiA84_jc/edit?usp=sharing";
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzpKHNvlP2RDyrV8_tyCXYDBb3BSaC-ZUXULhz4_TLyTf0ns2loy91EAcFWGCgESd6Q/exec";
 const STORAGE_KEY_URL = "stock_mgmt_sheet_url";
 const STORAGE_KEY_SCRIPT_URL = "stock_mgmt_script_url";
@@ -575,10 +575,11 @@ function mergeWithCustomEdits(items) {
   try {
     const edits = JSON.parse(editsJson);
     const itemMap = new Map();
-    items.forEach(item => itemMap.set(item.name.toLowerCase(), item));
+    // Use compound key (box + "___" + name) so same component in multiple boxes is never lost
+    items.forEach(item => itemMap.set(`${(item.box || '').trim().toLowerCase()}___${(item.name || '').trim().toLowerCase()}`, item));
 
     edits.forEach(editItem => {
-      itemMap.set(editItem.name.toLowerCase(), editItem);
+      itemMap.set(`${(editItem.box || '').trim().toLowerCase()}___${(editItem.name || '').trim().toLowerCase()}`, editItem);
     });
 
     return Array.from(itemMap.values());
