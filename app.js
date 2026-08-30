@@ -5,6 +5,7 @@
 
 // Default Spreadsheet URL and ID
 const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1LZhjZ9Fozly7Nnn6G9zXuByWBQUQ2vNRNyJVHaSW7Rc/edit?usp=sharing";
+const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzyhUn0IYGxF6i2YnZ-dOZhHN7EgWj0vZdMVwPNGvCvJAgWTlTpZIlEyOE8Q1nq_KLH/exec";
 const STORAGE_KEY_URL = "stock_mgmt_sheet_url";
 const STORAGE_KEY_SCRIPT_URL = "stock_mgmt_script_url";
 const STORAGE_KEY_DATA = "stock_mgmt_items_cache";
@@ -256,7 +257,7 @@ function setupLockscreen() {
 
   function handleUnlockSubmit() {
     const entered = input.value.trim();
-    if (entered === APP_PASSWORD) {
+    if (entered.toLowerCase() === APP_PASSWORD.toLowerCase()) {
       if (errorMsg) errorMsg.classList.add("hidden");
       
       const remember = rememberCheckbox && rememberCheckbox.checked;
@@ -337,9 +338,7 @@ function loadSavedConfig() {
     activeSheetUrl = savedUrl;
   }
   const savedScriptUrl = localStorage.getItem(STORAGE_KEY_SCRIPT_URL);
-  if (savedScriptUrl) {
-    activeScriptUrl = savedScriptUrl;
-  }
+  activeScriptUrl = savedScriptUrl || DEFAULT_SCRIPT_URL;
   updateSheetUrlDisplay();
 }
 
