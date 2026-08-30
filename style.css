@@ -1656,3 +1656,108 @@ body {
   margin-top: 4px;
 }
 
+/* --------------------------------------------------------------------------
+   QR CODE & STICKER LABEL STYLES
+   -------------------------------------------------------------------------- */
+.qr-sticker-preview {
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 12px;
+  padding: 18px 16px;
+  margin: 0 auto;
+  max-width: 280px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  border: 2px dashed #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.qr-sticker-header {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 12px;
+  border-bottom: 1.5px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+
+.qr-brand-tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #0284c7;
+  text-transform: uppercase;
+}
+
+.qr-box-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  word-break: break-word;
+}
+
+.qr-code-wrapper {
+  background: #ffffff;
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0;
+}
+
+.qr-code-wrapper img,
+.qr-code-wrapper canvas {
+  display: block;
+  margin: 0 auto;
+  border-radius: 4px;
+}
+
+.qr-sticker-footer {
+  width: 100%;
+  margin-top: 10px;
+  border-top: 1.5px solid #e2e8f0;
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+#qrStickerCount {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.qr-scan-hint {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Print Styles for QR Sticker Label */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #qrStickerPreview, #qrStickerPreview * {
+    visibility: visible;
+  }
+  #qrStickerPreview {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: none !important;
+    border: 2px solid #000000 !important;
+    width: 280px !important;
+    padding: 15px !important;
+  }
+}
+
+

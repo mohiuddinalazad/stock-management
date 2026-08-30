@@ -420,6 +420,19 @@ async function fetchOrLoadStockData(forceLive = false) {
   }
 
   refreshDashboardUI();
+  checkUrlParamsForBox();
+}
+
+function checkUrlParamsForBox() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const boxParam = params.get("box");
+    if (boxParam) {
+      const exactItem = currentItems.find(i => i.box.toLowerCase() === boxParam.toLowerCase());
+      const boxToOpen = exactItem ? exactItem.box : boxParam;
+      setTimeout(() => openBoxDetailModal(boxToOpen), 200);
+    }
+  } catch (e) {}
 }
 
 // Convert any Google Sheet share URL to CSV endpoint
@@ -879,7 +892,10 @@ function renderBoxesView() {
 
       <div class="box-card-footer">
         <button class="btn-add-to-box" onclick="event.stopPropagation(); openAddModalForBox('${safeBoxName}')">
-          <i class="fa-solid fa-plus-circle"></i> Add Component to Box
+          <i class="fa-solid fa-plus-circle"></i> Add Item
+        </button>
+        <button class="icon-btn" onclick="event.stopPropagation(); openQrModal('${safeBoxName}')" title="Print/Download QR Code Label for ${safeBoxName}">
+          <i class="fa-solid fa-qrcode"></i>
         </button>
         <button class="icon-btn" onclick="event.stopPropagation(); openBoxDetailModal('${safeBoxName}')" title="View Full Box Contents">
           <i class="fa-solid fa-folder-open"></i>
@@ -905,6 +921,13 @@ window.resetAllFilters = function() {
 // STORAGE BOX DETAIL MODAL LOGIC
 window.openBoxDetailModal = function(boxName) {
   activeDetailBoxName = boxName;
+
+  // Update browser URL query parameter so URL reflects current box
+  try {
+    const newUrl = window.location.pathname + '?box=' + encodeURIComponent(boxName);
+    window.history.pushState({ box: boxName }, '', newUrl);
+  } catch (e) {}
+
   const items = currentItems.filter(i => i.box === boxName);
   const totalUnits = items.reduce((sum, i) => sum + i.qty, 0);
 
@@ -974,6 +997,94 @@ window.deleteItemInBoxModal = function(id) {
 
 function closeBoxDetailModal() {
   document.getElementById("boxDetailModal").classList.add("hidden");
+  try {
+    window.history.pushState({}, '', window.location.pathname);
+  } catch (e) {}
+}
+
+// QR CODE & BOX STICKER LABEL LOGIC
+let activeQrBoxName = "";
+
+window.openQrModal = function(boxName) {
+  if (!boxName) return;
+  activeQrBoxName = boxName;
+  const items = currentItems.filter(i => i.box === boxName);
+  const totalUnits = items.reduce((sum, i) => sum + i.qty, 0);
+
+  document.getElementById("qrStickerBoxName").textContent = boxName;
+  document.getElementById("qrStickerCount").textContent = `${items.length} Component Types (${totalUnits} Total Units)`;
+  
+  const boxUrl = `${window.location.origin}${window.location.pathname}?box=${encodeURIComponent(boxName)}`;
+  const linkInput = document.getElementById("qrDirectLinkInput");
+  if (linkInput) linkInput.value = boxUrl;
+
+  const container = document.getElementById("qrCanvasContainer");
+  container.innerHTML = "";
+
+  try {
+    if (typeof QRCode !== "undefined") {
+      new QRCode(container, {
+        text: boxUrl,
+        width: 160,
+        height: 160,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    } else {
+      container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(boxUrl)}" alt="QR Code" style="width: 160px; height: 160px;">`;
+    }
+  } catch (errQr) {
+    container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(boxUrl)}" alt="QR Code" style="width: 160px; height: 160px;">`;
+  }
+
+  document.getElementById("qrModal").classList.remove("hidden");
+};
+
+function closeQrModal() {
+  document.getElementById("qrModal").classList.add("hidden");
+}
+
+function copyQrLink() {
+  const linkInput = document.getElementById("qrDirectLinkInput");
+  if (linkInput) {
+    linkInput.select();
+    navigator.clipboard.writeText(linkInput.value).then(() => {
+      showToast("Box direct URL copied to clipboard!", "success");
+    }).catch(() => {
+      showToast("Failed to copy link", "error");
+    });
+  }
+}
+
+function printQrSticker() {
+  window.print();
+}
+
+function downloadQrPng() {
+  const container = document.getElementById("qrCanvasContainer");
+  const canvas = container.querySelector("canvas");
+  const img = container.querySelector("img");
+
+  let dataUrl = "";
+  if (canvas) {
+    dataUrl = canvas.toDataURL("image/png");
+  } else if (img && img.src) {
+    dataUrl = img.src;
+  }
+
+  if (dataUrl) {
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    const safeName = activeQrBoxName.replace(/[^a-zA-Z0-9_-]/g, "_");
+    a.download = `QR_LABEL_${safeName}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast(`Downloaded QR code for "${activeQrBoxName}"`, "success");
+  } else {
+    showToast("QR image not ready yet", "info");
+  }
 }
 
 // DELETE STORAGE BOX WITH CONFIRMATION
@@ -1547,6 +1658,7 @@ function setupEventListeners() {
   const btnCloseDetailBtn = document.getElementById("btnCloseBoxDetailModalBtn");
   const btnDetailAddItem = document.getElementById("btnBoxDetailAddItem");
   const btnDetailDeleteBox = document.getElementById("btnBoxDetailDeleteBox");
+  const btnDetailQR = document.getElementById("btnBoxDetailQR");
 
   if (btnCloseDetail) btnCloseDetail.addEventListener("click", closeBoxDetailModal);
   if (btnCloseDetailBtn) btnCloseDetailBtn.addEventListener("click", closeBoxDetailModal);
@@ -1557,11 +1669,34 @@ function setupEventListeners() {
       openAddModalForBox(boxToUse);
     });
   }
+  if (btnDetailQR) {
+    btnDetailQR.addEventListener("click", () => {
+      openQrModal(activeDetailBoxName);
+    });
+  }
   if (btnDetailDeleteBox) {
     btnDetailDeleteBox.addEventListener("click", () => {
       deleteStorageBox(activeDetailBoxName);
     });
   }
+
+  // QR Modal Listeners
+  const btnCloseQr = document.getElementById("btnCloseQrModal");
+  const btnCloseQrBtn = document.getElementById("btnCloseQrModalBtn");
+  const btnCopyQr = document.getElementById("btnCopyQrLink");
+  const btnPrintQr = document.getElementById("btnPrintQrSticker");
+  const btnDownloadQr = document.getElementById("btnDownloadQrPng");
+
+  if (btnCloseQr) btnCloseQr.addEventListener("click", closeQrModal);
+  if (btnCloseQrBtn) btnCloseQrBtn.addEventListener("click", closeQrModal);
+  if (btnCopyQr) btnCopyQr.addEventListener("click", copyQrLink);
+  if (btnPrintQr) btnPrintQr.addEventListener("click", printQrSticker);
+  if (btnDownloadQr) btnDownloadQr.addEventListener("click", downloadQrPng);
+
+  // Handle Browser Back / Forward URL changes
+  window.addEventListener("popstate", () => {
+    checkUrlParamsForBox();
+  });
 
   // View Switcher
   document.getElementById("btnViewTable").addEventListener("click", () => setView("table"));
