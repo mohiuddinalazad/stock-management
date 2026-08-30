@@ -11,6 +11,7 @@ const STORAGE_KEY_SCRIPT_URL = "stock_mgmt_script_url";
 const STORAGE_KEY_DATA = "stock_mgmt_items_cache";
 const STORAGE_KEY_CUSTOM_EDITS = "stock_mgmt_custom_edits";
 const STORAGE_KEY_AUTH = "stock_mgmt_auth_status";
+const STORAGE_KEY_SHORT_URLS = "stock_mgmt_box_shorturls";
 const APP_PASSWORD = "Mohiuddin";
 
 // Initial Pre-loaded Dataset Extracted from Google Sheet for Immediate Standalone Loading
@@ -1023,6 +1024,29 @@ function closeBoxDetailModal() {
 // QR CODE & BOX STICKER LABEL LOGIC
 let activeQrBoxName = "";
 
+function renderQrForUrl(urlToEncode) {
+  const container = document.getElementById("qrCanvasContainer");
+  if (!container) return;
+  container.innerHTML = "";
+
+  try {
+    if (typeof QRCode !== "undefined") {
+      new QRCode(container, {
+        text: urlToEncode,
+        width: 175,
+        height: 175,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.L // Level L creates the absolute largest, boldest, simplest square pixels!
+      });
+    } else {
+      container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=175x175&data=${encodeURIComponent(urlToEncode)}&ecc=L" alt="QR Code" style="width: 175px; height: 175px;">`;
+    }
+  } catch (errQr) {
+    container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=175x175&data=${encodeURIComponent(urlToEncode)}&ecc=L" alt="QR Code" style="width: 175px; height: 175px;">`;
+  }
+}
+
 window.openQrModal = function(boxName) {
   if (!boxName) return;
   activeQrBoxName = boxName;
@@ -1032,31 +1056,19 @@ window.openQrModal = function(boxName) {
   document.getElementById("qrStickerBoxName").textContent = boxName;
   document.getElementById("qrStickerCount").textContent = `${items.length} Component Types (${totalUnits} Total Units)`;
   
-  // Short URL for simplified, high-readability QR code
-  const boxUrl = `${window.location.origin}${window.location.pathname}?b=${encodeURIComponent(boxName)}`;
-  const linkInput = document.getElementById("qrDirectLinkInput");
-  if (linkInput) linkInput.value = boxUrl;
-
-  const container = document.getElementById("qrCanvasContainer");
-  container.innerHTML = "";
-
+  // Check if user previously saved a custom short URL (like shorturl.at/...)
+  let savedUrls = {};
   try {
-    if (typeof QRCode !== "undefined") {
-      new QRCode(container, {
-        text: boxUrl,
-        width: 175,
-        height: 175,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M // Level M makes big, clean, easily-scannable square pixels!
-      });
-    } else {
-      container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=175x175&data=${encodeURIComponent(boxUrl)}&ecc=M" alt="QR Code" style="width: 175px; height: 175px;">`;
-    }
-  } catch (errQr) {
-    container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=175x175&data=${encodeURIComponent(boxUrl)}&ecc=M" alt="QR Code" style="width: 175px; height: 175px;">`;
-  }
+    savedUrls = JSON.parse(localStorage.getItem(STORAGE_KEY_SHORT_URLS) || "{}");
+  } catch (e) {}
 
+  const defaultBoxUrl = `${window.location.origin}${window.location.pathname}?b=${encodeURIComponent(boxName)}`;
+  const finalUrl = savedUrls[boxName] || defaultBoxUrl;
+
+  const linkInput = document.getElementById("qrDirectLinkInput");
+  if (linkInput) linkInput.value = finalUrl;
+
+  renderQrForUrl(finalUrl);
   document.getElementById("qrModal").classList.remove("hidden");
 };
 
@@ -1705,12 +1717,28 @@ function setupEventListeners() {
   const btnCopyQr = document.getElementById("btnCopyQrLink");
   const btnPrintQr = document.getElementById("btnPrintQrSticker");
   const btnDownloadQr = document.getElementById("btnDownloadQrPng");
+  const qrInput = document.getElementById("qrDirectLinkInput");
 
   if (btnCloseQr) btnCloseQr.addEventListener("click", closeQrModal);
   if (btnCloseQrBtn) btnCloseQrBtn.addEventListener("click", closeQrModal);
   if (btnCopyQr) btnCopyQr.addEventListener("click", copyQrLink);
   if (btnPrintQr) btnPrintQr.addEventListener("click", printQrSticker);
   if (btnDownloadQr) btnDownloadQr.addEventListener("click", downloadQrPng);
+
+  if (qrInput) {
+    qrInput.addEventListener("input", () => {
+      const val = qrInput.value.trim();
+      if (val && activeQrBoxName) {
+        renderQrForUrl(val);
+        let savedUrls = {};
+        try {
+          savedUrls = JSON.parse(localStorage.getItem(STORAGE_KEY_SHORT_URLS) || "{}");
+        } catch (e) {}
+        savedUrls[activeQrBoxName] = val;
+        localStorage.setItem(STORAGE_KEY_SHORT_URLS, JSON.stringify(savedUrls));
+      }
+    });
+  }
 
   // Handle Browser Back / Forward URL changes
   window.addEventListener("popstate", () => {

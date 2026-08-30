@@ -745,11 +745,21 @@
         </div>
 
         <div class="form-group" style="margin-top: 16px; text-align: left;">
-          <label style="font-size: 12px; color: var(--text-muted);"><i class="fa-solid fa-link"></i> Direct Box URL:</label>
-          <div style="display: flex; gap: 6px; margin-top: 4px;">
-            <input type="text" id="qrDirectLinkInput" class="form-control code-font" style="font-size: 11px; padding: 8px;" readonly>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 0;">
+              <i class="fa-solid fa-link"></i> QR Code URL (or Short URL):
+            </label>
+            <a href="https://www.shorturl.at/" target="_blank" style="font-size: 11px; color: var(--primary-cyan); text-decoration: underline;" title="Open shorturl.at in new tab">
+              <i class="fa-solid fa-scissors"></i> Create on ShortURL.at
+            </a>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <input type="text" id="qrDirectLinkInput" class="form-control code-font" style="font-size: 11px; padding: 8px;" placeholder="https://shorturl.at/... or direct link">
             <button class="btn btn-secondary" id="btnCopyQrLink" title="Copy Box Link"><i class="fa-solid fa-copy"></i></button>
           </div>
+          <small style="color: var(--text-dim); font-size: 11px; display: block; margin-top: 5px;">
+            💡 <strong>Pro Tip:</strong> You can paste any short link (like <code>https://shorturl.at/k14kv</code>) into the box above to generate an ultra-clean, minimal QR code!
+          </small>
         </div>
 
         <div class="qr-actions-grid" style="display: flex; gap: 10px; margin-top: 16px;">
