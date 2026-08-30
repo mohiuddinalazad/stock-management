@@ -426,11 +426,29 @@ async function fetchOrLoadStockData(forceLive = false) {
 function checkUrlParamsForBox() {
   try {
     const params = new URLSearchParams(window.location.search);
-    const boxParam = params.get("box");
-    if (boxParam) {
-      const exactItem = currentItems.find(i => i.box.toLowerCase() === boxParam.toLowerCase());
-      const boxToOpen = exactItem ? exactItem.box : boxParam;
-      setTimeout(() => openBoxDetailModal(boxToOpen), 200);
+    const boxParam = (params.get("b") || params.get("box") || "").trim();
+    if (!boxParam) return;
+
+    const cleanQuery = boxParam.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    // 1. Exact match
+    let match = currentItems.find(i => i.box.toLowerCase() === boxParam.toLowerCase());
+
+    // 2. Clean alphanumeric match (e.g. "boxr1boxa50" -> "BOX_R1, BOX_A-50")
+    if (!match) {
+      match = currentItems.find(i => i.box.toLowerCase().replace(/[^a-z0-9]/g, "") === cleanQuery);
+    }
+
+    // 3. Substring / Prefix match
+    if (!match) {
+      match = currentItems.find(i => {
+        const itemBoxClean = i.box.toLowerCase().replace(/[^a-z0-9]/g, "");
+        return itemBoxClean.includes(cleanQuery) || cleanQuery.includes(itemBoxClean);
+      });
+    }
+
+    if (match) {
+      setTimeout(() => openBoxDetailModal(match.box), 200);
     }
   } catch (e) {}
 }
@@ -922,9 +940,9 @@ window.resetAllFilters = function() {
 window.openBoxDetailModal = function(boxName) {
   activeDetailBoxName = boxName;
 
-  // Update browser URL query parameter so URL reflects current box
+  // Update browser URL query parameter to short ?b=
   try {
-    const newUrl = window.location.pathname + '?box=' + encodeURIComponent(boxName);
+    const newUrl = window.location.pathname + '?b=' + encodeURIComponent(boxName);
     window.history.pushState({ box: boxName }, '', newUrl);
   } catch (e) {}
 
@@ -1014,7 +1032,8 @@ window.openQrModal = function(boxName) {
   document.getElementById("qrStickerBoxName").textContent = boxName;
   document.getElementById("qrStickerCount").textContent = `${items.length} Component Types (${totalUnits} Total Units)`;
   
-  const boxUrl = `${window.location.origin}${window.location.pathname}?box=${encodeURIComponent(boxName)}`;
+  // Short URL for simplified, high-readability QR code
+  const boxUrl = `${window.location.origin}${window.location.pathname}?b=${encodeURIComponent(boxName)}`;
   const linkInput = document.getElementById("qrDirectLinkInput");
   if (linkInput) linkInput.value = boxUrl;
 
@@ -1025,17 +1044,17 @@ window.openQrModal = function(boxName) {
     if (typeof QRCode !== "undefined") {
       new QRCode(container, {
         text: boxUrl,
-        width: 160,
-        height: 160,
-        colorDark: "#0f172a",
+        width: 175,
+        height: 175,
+        colorDark: "#000000",
         colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
+        correctLevel: QRCode.CorrectLevel.M // Level M makes big, clean, easily-scannable square pixels!
       });
     } else {
-      container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(boxUrl)}" alt="QR Code" style="width: 160px; height: 160px;">`;
+      container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=175x175&data=${encodeURIComponent(boxUrl)}&ecc=M" alt="QR Code" style="width: 175px; height: 175px;">`;
     }
   } catch (errQr) {
-    container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(boxUrl)}" alt="QR Code" style="width: 160px; height: 160px;">`;
+    container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=175x175&data=${encodeURIComponent(boxUrl)}&ecc=M" alt="QR Code" style="width: 175px; height: 175px;">`;
   }
 
   document.getElementById("qrModal").classList.remove("hidden");
