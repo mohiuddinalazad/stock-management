@@ -38,7 +38,7 @@ function doGet(e) {
         const edited = editItemInSheet(sheet, data, e.parameter.oldName || e.parameter.name, e.parameter.name, e.parameter.category, e.parameter.box, e.parameter.qty);
         result.edited = edited;
       } else if (action === "DELETE_ITEM") {
-        const deleted = deleteItemFromSheet(sheet, data, e.parameter.name);
+        const deleted = deleteItemFromSheet(sheet, data, e.parameter.name, e.parameter.box);
         result.deleted = deleted;
       }
 
@@ -90,7 +90,7 @@ function doPost(e) {
       const edited = editItemInSheet(sheet, data, payload.oldName || payload.name, payload.name, payload.category, payload.box, payload.qty);
       result.edited = edited;
     } else if (action === "DELETE_ITEM") {
-      const deleted = deleteItemFromSheet(sheet, data, payload.name);
+      const deleted = deleteItemFromSheet(sheet, data, payload.name, payload.box);
       result.deleted = deleted;
     }
 
@@ -162,10 +162,11 @@ function isHeader(text) {
 function updateItemQuantity(sheet, data, targetName, newQty, boxName, catName) {
   if (!targetName) return false;
   const targetLower = String(targetName).trim().toLowerCase();
+  const boxLower = boxName ? String(boxName).trim().toLowerCase() : "";
   const colSets = [
-    { nameCol: 2, qtyCol: 3 },
-    { nameCol: 7, qtyCol: 8 },
-    { nameCol: 12, qtyCol: 13 }
+    { boxCol: 0, catCol: 1, nameCol: 2, qtyCol: 3 },
+    { boxCol: 5, catCol: 6, nameCol: 7, qtyCol: 8 },
+    { boxCol: 10, catCol: 11, nameCol: 12, qtyCol: 13 }
   ];
 
   for (let r = 0; r < data.length; r++) {
@@ -173,7 +174,12 @@ function updateItemQuantity(sheet, data, targetName, newQty, boxName, catName) {
     for (const set of colSets) {
       if (set.nameCol < row.length) {
         const nameInCell = String(row[set.nameCol] || "").trim();
-        if (nameInCell.toLowerCase() === targetLower) {
+        const boxInCell = String(row[set.boxCol] || "").trim();
+        
+        const nameMatches = nameInCell.toLowerCase() === targetLower;
+        const boxMatches = !boxLower || boxInCell.toLowerCase() === boxLower || !boxInCell;
+
+        if (nameMatches && boxMatches) {
           // Update quantity cell (1-indexed for Sheet range)
           sheet.getRange(r + 1, set.qtyCol + 1).setValue(newQty);
           return true;
@@ -199,6 +205,7 @@ function addItemToSheet(sheet, data, name, category, box, qty) {
 // Edit existing item in sheet
 function editItemInSheet(sheet, data, oldName, newName, category, box, qty) {
   const targetLower = String(oldName || newName).trim().toLowerCase();
+  const boxLower = box ? String(box).trim().toLowerCase() : "";
   const colSets = [
     { boxCol: 0, catCol: 1, nameCol: 2, qtyCol: 3 },
     { boxCol: 5, catCol: 6, nameCol: 7, qtyCol: 8 },
@@ -210,7 +217,12 @@ function editItemInSheet(sheet, data, oldName, newName, category, box, qty) {
     for (const set of colSets) {
       if (set.nameCol < row.length) {
         const nameInCell = String(row[set.nameCol] || "").trim();
-        if (nameInCell.toLowerCase() === targetLower) {
+        const boxInCell = String(row[set.boxCol] || "").trim();
+        
+        const nameMatches = nameInCell.toLowerCase() === targetLower;
+        const boxMatches = !boxLower || boxInCell.toLowerCase() === boxLower || !boxInCell;
+
+        if (nameMatches && boxMatches) {
           if (newName) sheet.getRange(r + 1, set.nameCol + 1).setValue(newName);
           if (category) sheet.getRange(r + 1, set.catCol + 1).setValue(category);
           if (box) sheet.getRange(r + 1, set.boxCol + 1).setValue(box);
@@ -226,14 +238,15 @@ function editItemInSheet(sheet, data, oldName, newName, category, box, qty) {
   return true;
 }
 
-// Delete item by clearing cells
-function deleteItemFromSheet(sheet, data, targetName) {
+// Delete item by clearing cells or deleting row
+function deleteItemFromSheet(sheet, data, targetName, boxName) {
   if (!targetName) return false;
   const targetLower = String(targetName).trim().toLowerCase();
+  const boxLower = boxName ? String(boxName).trim().toLowerCase() : "";
   const colSets = [
-    { nameCol: 2, qtyCol: 3 },
-    { nameCol: 7, qtyCol: 8 },
-    { nameCol: 12, qtyCol: 13 }
+    { boxCol: 0, catCol: 1, nameCol: 2, qtyCol: 3 },
+    { boxCol: 5, catCol: 6, nameCol: 7, qtyCol: 8 },
+    { boxCol: 10, catCol: 11, nameCol: 12, qtyCol: 13 }
   ];
 
   for (let r = 0; r < data.length; r++) {
@@ -241,9 +254,18 @@ function deleteItemFromSheet(sheet, data, targetName) {
     for (const set of colSets) {
       if (set.nameCol < row.length) {
         const nameInCell = String(row[set.nameCol] || "").trim();
-        if (nameInCell.toLowerCase() === targetLower) {
-          sheet.getRange(r + 1, set.nameCol + 1).setValue("");
-          sheet.getRange(r + 1, set.qtyCol + 1).setValue("");
+        const boxInCell = String(row[set.boxCol] || "").trim();
+
+        const nameMatches = nameInCell.toLowerCase() === targetLower;
+        const boxMatches = !boxLower || boxInCell.toLowerCase() === boxLower || !boxInCell;
+
+        if (nameMatches && boxMatches) {
+          if (set.boxCol === 0 && row.length <= 4) {
+            sheet.deleteRow(r + 1);
+          } else {
+            sheet.getRange(r + 1, set.nameCol + 1).setValue("");
+            sheet.getRange(r + 1, set.qtyCol + 1).setValue("");
+          }
           return true;
         }
       }

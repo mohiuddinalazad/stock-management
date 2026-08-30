@@ -1515,11 +1515,12 @@ window.deleteItem = function(id) {
 
   if (confirm(`Are you sure you want to delete component "${item.name}"?`)) {
     const deletedName = item.name;
+    const deletedBox = item.box;
     currentItems = currentItems.filter(i => i.id !== id);
     saveCustomEdits();
     refreshDashboardUI();
     showToast(`Deleted component "${deletedName}"`, "info");
-    syncItemToGoogleSheet("DELETE_ITEM", { name: deletedName });
+    syncItemToGoogleSheet("DELETE_ITEM", { name: deletedName, box: deletedBox });
   }
 };
 
