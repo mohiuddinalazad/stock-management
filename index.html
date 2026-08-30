@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="bn">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Components Stock Management | Google Sheet Live Dashboard</title>
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Chart.js for Data Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- PapaParse for CSV Parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="brand-icon">
+        <i class="fa-solid fa-microchip"></i>
+      </div>
+      <div class="brand-text">
+        <h1>Components Stock Management</h1>
+        <p class="brand-subtitle"><i class="fa-brands fa-google-drive"></i> Google Sheet Connected Dashboard</p>
+      </div>
+    </div>
+
+    <!-- Sync Indicator & Quick Actions -->
+    <div class="nav-controls">
+      <div class="sync-badge" id="syncStatusBadge">
+        <span class="status-dot pulsing-green"></span>
+        <span id="syncStatusText">Ready</span>
+        <span class="sync-time" id="lastSyncTime">Just now</span>
+      </div>
+
+      <button class="btn btn-primary" id="btnSyncNow" title="Sync live data from Google Sheet">
+        <i class="fa-solid fa-rotate"></i> Sync Live Sheet
+      </button>
+
+      <button class="btn btn-secondary" id="btnOpenSheetUrl" title="Configure Google Sheet Link">
+        <i class="fa-solid fa-link"></i> Sheet Link
+      </button>
+
+      <button class="btn btn-accent" id="btnAddItem">
+        <i class="fa-solid fa-plus"></i> Add Component
+      </button>
+
+      <button class="btn btn-outline" id="btnToggleTheme" title="Toggle Light/Dark Theme">
+        <i class="fa-solid fa-sun" id="themeIcon"></i> <span id="themeText">Light</span>
+      </button>
+
+      <button class="btn btn-outline" id="btnExport">
+        <i class="fa-solid fa-download"></i> Export CSV
+      </button>
+    </div>
+  </header>
+
+  <!-- Google Sheet Link Banner Bar -->
+  <div class="sheet-banner-bar">
+    <div class="banner-content">
+      <i class="fa-solid fa-table-cells text-accent"></i>
+      <span class="banner-label">Connected Google Sheet:</span>
+      <a href="https://docs.google.com/spreadsheets/d/1LZhjZ9Fozly7Nnn6G9zXuByWBQUQ2vNRNyJVHaSW7Rc/edit?usp=sharing"
+        target="_blank" id="connectedSheetUrlDisplay" class="sheet-url-link">
+        https://docs.google.com/spreadsheets/d/1LZhjZ9Fozly7Nnn6G9zXuByWBQUQ2vNRNyJVHaSW7Rc/edit
+      </a>
+    </div>
+    <div class="banner-actions">
+      <span class="live-pill"><i class="fa-solid fa-bolt"></i> Live Endpoint</span>
+      <button class="btn-text" id="btnChangeSheetQuick"><i class="fa-solid fa-pen"></i> Edit Link</button>
+    </div>
+  </div>
+
+  <main class="dashboard-container">
+    <!-- Executive KPI Metrics Summary Cards -->
+    <section class="metrics-grid">
+      <!-- Metric 1: Total Items -->
+      <div class="metric-card cyan">
+        <div class="metric-header">
+          <span class="metric-title">Total Components</span>
+          <div class="metric-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+        </div>
+        <div class="metric-value" id="valTotalItems">0</div>
+        <div class="metric-footer text-cyan">
+          <i class="fa-solid fa-layer-group"></i> <span id="subTotalTypes">0 Types</span>
+        </div>
+      </div>
+
+      <!-- Metric 2: Total Quantity -->
+      <div class="metric-card emerald">
+        <div class="metric-header">
+          <span class="metric-title">Total Stock Units</span>
+          <div class="metric-icon"><i class="fa-solid fa-cubes"></i></div>
+        </div>
+        <div class="metric-value" id="valTotalQuantity">0</div>
+        <div class="metric-footer text-emerald">
+          <i class="fa-solid fa-check-double"></i> In Stock Units
+        </div>
+      </div>
+
+      <!-- Metric 3: Out of Stock (0 items) -->
+      <div class="metric-card rose clickable-metric" id="cardFilterOutOfStock"
+        title="Click to filter Out of Stock items">
+        <div class="metric-header">
+          <span class="metric-title">Out of Stock</span>
+          <div class="metric-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        </div>
+        <div class="metric-value text-rose" id="valOutOfStock">0</div>
+        <div class="metric-footer text-rose">
+          <i class="fa-solid fa-ban"></i> <span>0 Quantity (Needs Ordering)</span>
+        </div>
+      </div>
+
+      <!-- Metric 4: Low Stock (1-5 items) -->
+      <div class="metric-card amber clickable-metric" id="cardFilterLowStock" title="Click to filter Low Stock items">
+        <div class="metric-header">
+          <span class="metric-title">Low Stock Warning</span>
+          <div class="metric-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+        </div>
+        <div class="metric-value text-amber" id="valLowStock">0</div>
+        <div class="metric-footer text-amber">
+          <i class="fa-solid fa-truck-ramp-box"></i> <span>Stock &le; 5 Units</span>
+        </div>
+      </div>
+
+      <!-- Metric 5: Total Storage Boxes -->
+      <div class="metric-card purple clickable-metric" id="cardFilterBoxes" title="Click to view Storage Boxes Grid">
+        <div class="metric-header">
+          <span class="metric-title">Storage Boxes</span>
+          <div class="metric-icon"><i class="fa-solid fa-box-archive"></i></div>
+        </div>
+        <div class="metric-value" id="valTotalBoxes">0</div>
+        <div class="metric-footer text-purple">
+          <i class="fa-solid fa-location-dot"></i> Organized Locations (Click to View)
+        </div>
+      </div>
+
+      <!-- Metric 6: Categories Count -->
+      <div class="metric-card blue">
+        <div class="metric-header">
+          <span class="metric-title">Categories</span>
+          <div class="metric-icon"><i class="fa-solid fa-tags"></i></div>
+        </div>
+        <div class="metric-value" id="valTotalCategories">0</div>
+        <div class="metric-footer text-blue">
+          <i class="fa-solid fa-folder-tree"></i> Item Groups
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation & Filter Toolbar -->
+    <section class="toolbar-card">
+      <div class="toolbar-left">
+        <!-- Search input -->
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="searchInput" placeholder="Search by name, box ID, category..." autocomplete="off">
+          <button class="clear-search" id="btnClearSearch" title="Clear search"><i
+              class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- Category Dropdown Filter -->
+        <div class="filter-group">
+          <label for="categoryFilter"><i class="fa-solid fa-filter"></i> Category:</label>
+          <select id="categoryFilter" class="custom-select">
+            <option value="ALL">All Categories</option>
+          </select>
+        </div>
+
+        <!-- Box Dropdown Filter -->
+        <div class="filter-group">
+          <label for="boxFilter"><i class="fa-solid fa-box"></i> Box ID:</label>
+          <select id="boxFilter" class="custom-select">
+            <option value="ALL">All Storage Boxes</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <!-- Status Filter Tabs -->
+        <div class="status-pills">
+          <button class="status-pill active" data-status="ALL">All (<span id="countPillAll">0</span>)</button>
+          <button class="status-pill status-in-stock" data-status="IN_STOCK">In Stock (<span
+              id="countPillInStock">0</span>)</button>
+          <button class="status-pill status-low" data-status="LOW">Low Stock (<span id="countPillLow">0</span>)</button>
+          <button class="status-pill status-out" data-status="OUT">Out of Stock (<span
+              id="countPillOut">0</span>)</button>
+        </div>
+
+        <!-- Sort Select -->
+        <div class="sort-group">
+          <select id="sortSelect" class="custom-select">
+            <option value="NAME_ASC">Name (A-Z)</option>
+            <option value="QTY_DESC">Stock: High to Low</option>
+            <option value="QTY_ASC">Stock: Low to High</option>
+            <option value="BOX_ASC">Box ID (A-Z)</option>
+            <option value="CAT_ASC">Category (A-Z)</option>
+          </select>
+        </div>
+
+        <!-- View Switcher -->
+        <div class="view-switcher">
+          <button class="view-btn" id="btnViewTable" title="Table View">
+            <i class="fa-solid fa-list-check"></i>
+          </button>
+          <button class="view-btn" id="btnViewGrid" title="Grid Card View">
+            <i class="fa-solid fa-border-all"></i>
+          </button>
+          <button class="view-btn active" id="btnViewBoxes" title="Storage Boxes Organizer View">
+            <i class="fa-solid fa-boxes-packing"></i>
+          </button>
+          <button class="view-btn" id="btnViewAnalytics" title="Analytics & Charts View">
+            <i class="fa-solid fa-chart-pie"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content Area -->
+    <!-- 1. Table View -->
+    <section id="tableViewSection" class="view-section hidden">
+      <div class="table-container glass-panel">
+        <table class="data-table" id="componentsTable">
+          <thead>
+            <tr>
+              <th style="width: 110px;">Status</th>
+              <th>Component Name</th>
+              <th>Category</th>
+              <th>Storage Box</th>
+              <th style="width: 140px; text-align: center;">Stock Quantity</th>
+              <th style="width: 160px; text-align: center;">Quick Adjust</th>
+              <th style="width: 100px; text-align: center;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- Dynamic Rows rendered via app.js -->
+          </tbody>
+        </table>
+
+        <!-- Empty State -->
+        <div class="empty-state hidden" id="emptyState">
+          <div class="empty-icon"><i class="fa-solid fa-box-open"></i></div>
+          <h3>No Components Found</h3>
+          <p>No inventory items match your current search or filter criteria.</p>
+          <button class="btn btn-secondary" id="btnResetFilters">Reset All Filters</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Grid View -->
+    <section id="gridViewSection" class="view-section hidden">
+      <div class="cards-grid" id="cardsGrid">
+        <!-- Dynamic Cards rendered via app.js -->
+      </div>
+    </section>
+
+    <!-- 3. Storage Boxes View -->
+    <section id="boxesViewSection" class="view-section active">
+      <div class="boxes-header-banner glass-panel"
+        style="margin-bottom: 20px; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+        <div>
+          <h2
+            style="font-size: 18px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-boxes-packing text-purple"></i> Storage Boxes Organizer
+          </h2>
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+            Browse electronic components grouped by physical Storage Box. Click <strong>"+ Add Component"</strong> on
+            any Box Card to add items directly into that Box.
+          </p>
+        </div>
+        <button class="btn btn-accent" id="btnCreateNewBox">
+          <i class="fa-solid fa-box-open"></i> Create New Storage Box
+        </button>
+      </div>
+      <div class="boxes-grid" id="boxesGrid">
+        <!-- Dynamic Box Cards rendered via app.js -->
+      </div>
+    </section>
+
+    <!-- 3. Analytics & Charts View -->
+    <section id="analyticsViewSection" class="view-section hidden">
+      <div class="analytics-grid">
+        <!-- Chart 1: Stock Distribution by Category -->
+        <div class="chart-card glass-panel">
+          <div class="chart-header">
+            <h3><i class="fa-solid fa-chart-pie text-cyan"></i> Stock Units by Category</h3>
+            <span class="chart-subtitle">Component Quantity Breakdown</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="categoryChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Top Storage Boxes by Item Count -->
+        <div class="chart-card glass-panel">
+          <div class="chart-header">
+            <h3><i class="fa-solid fa-chart-column text-emerald"></i> Items per Storage Box</h3>
+            <span class="chart-subtitle">Top Storage Locations</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="boxChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Analytics Card 3: Critical Restock List -->
+        <div class="chart-card glass-panel full-width-card">
+          <div class="chart-header">
+            <h3><i class="fa-solid fa-bell text-rose"></i> Immediate Restock Recommended (Low & Out of Stock)</h3>
+            <span class="chart-subtitle">Action Required Items</span>
+          </div>
+          <div class="restock-list" id="restockListContainer">
+            <!-- Dynamic Restock Items -->
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODALS -->
+
+  <!-- 0. Storage Box Detail Modal (Opens when clicking any Box Card) -->
+  <div class="modal-overlay hidden" id="boxDetailModal">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h2 id="boxDetailModalTitle"><i class="fa-solid fa-box-archive text-purple"></i> Storage Box Contents</h2>
+        <button class="modal-close" id="btnCloseBoxDetailModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="box-detail-summary-bar" id="boxDetailSummary">
+          <!-- Box stats summary rendered dynamically -->
+        </div>
+
+        <div class="table-container glass-panel" style="max-height: 420px; overflow-y: auto; margin-top: 14px;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 100px;">Status</th>
+                <th>Component Name</th>
+                <th>Category</th>
+                <th style="width: 120px; text-align: center;">Quantity</th>
+                <th style="width: 150px; text-align: center;">Quick Adjust</th>
+                <th style="width: 90px; text-align: center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="boxDetailTableBody">
+              <!-- Rendered dynamically via app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <button class="btn btn-accent" id="btnBoxDetailAddItem">
+          <i class="fa-solid fa-plus-circle"></i> Add Component to this Box
+        </button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-outline" id="btnBoxDetailDeleteBox" style="color: var(--accent-rose); border-color: rgba(244, 63, 94, 0.4);" title="Delete this storage box and all items inside">
+            <i class="fa-solid fa-trash-can"></i> Delete Box
+          </button>
+          <button class="btn btn-secondary" id="btnCloseBoxDetailModalBtn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. Google Sheet Link & 2-Way Auto-Sync Modal -->
+  <div class="modal-overlay hidden" id="sheetUrlModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2><i class="fa-brands fa-google-drive"></i> Configure Google Sheet & Auto-Sync</h2>
+        <button class="modal-close" id="btnCloseSheetModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Configure your Google Spreadsheet URL for reading and Apps Script Web App URL for automatic 2-way live sync:</p>
+        
+        <div class="form-group">
+          <label for="inputSheetUrl"><i class="fa-solid fa-table"></i> Google Spreadsheet Share URL (Read):</label>
+          <input type="text" id="inputSheetUrl" class="form-control"
+            placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+            value="https://docs.google.com/spreadsheets/d/1LZhjZ9Fozly7Nnn6G9zXuByWBQUQ2vNRNyJVHaSW7Rc/edit">
+        </div>
+
+        <div class="form-group" style="margin-top: 15px;">
+          <label for="inputScriptUrl" style="color: var(--primary-cyan); font-weight: 600;">
+            <i class="fa-solid fa-bolt text-accent"></i> Google Apps Script Web App URL (2-Way Real-time Auto-Save):
+          </label>
+          <input type="text" id="inputScriptUrl" class="form-control"
+            placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+          <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 4px;">
+            Paste the Web App Endpoint URL from Apps Script deployment to enable instant 2-way auto-save directly to Google Sheet.
+          </small>
+        </div>
+
+        <div class="info-callout" style="margin-top: 15px;">
+          <i class="fa-solid fa-circle-info"></i>
+          <div>
+            <strong>How to get Apps Script Web App URL:</strong><br>
+            Open your Google Sheet &rarr; Click <em>Extensions &rarr; Apps Script</em> &rarr; Paste code from <code>google_apps_script.js</code> &rarr; Deploy as <em>Web App</em> (Access: Anyone) &rarr; Copy Web App URL here!
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelSheetModal">Cancel</button>
+        <button class="btn btn-primary" id="btnSaveSheetUrl"><i class="fa-solid fa-plug"></i> Connect & Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Add / Edit Component Modal -->
+  <div class="modal-overlay hidden" id="itemModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="itemModalTitle"><i class="fa-solid fa-plus-circle"></i> Add New Component</h2>
+        <button class="modal-close" id="btnCloseItemModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="itemForm">
+          <input type="hidden" id="editItemId" value="">
+
+          <div class="form-group">
+            <label for="formItemName">Component Name *</label>
+            <input type="text" id="formItemName" class="form-control"
+              placeholder="e.g. ESP32 Dev Module, 10K Resistor, BC547" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="formCategory">Category</label>
+              <input type="text" id="formCategory" class="form-control"
+                placeholder="e.g. Modules, Resistors, Transistors" list="categoryDatalist">
+              <datalist id="categoryDatalist"></datalist>
+            </div>
+
+            <div class="form-group">
+              <label for="formBox">Storage Box ID</label>
+              <input type="text" id="formBox" class="form-control" placeholder="e.g. BOX_A-57, BOX_A15"
+                list="boxDatalist">
+              <datalist id="boxDatalist"></datalist>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="formQuantity">Stock Quantity *</label>
+            <input type="number" id="formQuantity" class="form-control" min="0" value="1" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelItemModal">Cancel</button>
+        <button class="btn btn-accent" id="btnSaveItem"><i class="fa-solid fa-floppy-disk"></i> Save Item</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Export Modal -->
+  <div class="modal-overlay hidden" id="exportModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-file-export"></i> Export Stock Data</h2>
+        <button class="modal-close" id="btnCloseExportModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Download or copy the current inventory dataset:</p>
+        <div class="export-options">
+          <button class="btn btn-primary" id="btnDownloadCSV"><i class="fa-solid fa-file-csv"></i> Download CSV
+            File</button>
+          <button class="btn btn-secondary" id="btnCopyTSV"><i class="fa-solid fa-copy"></i> Copy TSV for Google
+            Sheets</button>
+        </div>
+        <div class="form-group" style="margin-top: 15px;">
+          <label>CSV Preview:</label>
+          <textarea id="csvPreviewText" class="form-control code-font" rows="8" readonly></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnDoneExport">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
