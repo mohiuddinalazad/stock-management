@@ -4,8 +4,8 @@
  */
 
 // Default Spreadsheet URL and ID
-const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1LZhjZ9Fozly7Nnn6G9zXuByWBQUQ2vNRNyJVHaSW7Rc/edit?usp=sharing";
-const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzyhUn0IYGxF6i2YnZ-dOZhHN7EgWj0vZdMVwPNGvCvJAgWTlTpZIlEyOE8Q1nq_KLH/exec";
+const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1b4oENM0Ez94YTgqiwtJ2cDheZCfxUd-RQzqeSiA84_jc/edit?usp=sharing";
+const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzpKHNvlP2RDyrV8_tyCXYDBb3BSaC-ZUXULhz4_TLyTf0ns2loy91EAcFWGCgESd6Q/exec";
 const STORAGE_KEY_URL = "stock_mgmt_sheet_url";
 const STORAGE_KEY_SCRIPT_URL = "stock_mgmt_script_url";
 const STORAGE_KEY_DATA = "stock_mgmt_items_cache";
