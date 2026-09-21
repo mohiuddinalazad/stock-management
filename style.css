@@ -181,42 +181,111 @@ body.light-theme .box-item-chip .chip-qty {
 
 body.light-theme .modal-card {
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   color: #0f172a;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
 body.light-theme .modal-header, 
 body.light-theme .modal-footer {
-  background: rgba(248, 250, 252, 0.9);
-  border-color: rgba(0, 0, 0, 0.08);
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+
+body.light-theme .modal-header h2 {
+  color: #0f172a;
+}
+
+body.light-theme .modal-close {
+  color: #0f172a;
+}
+body.light-theme .modal-close:hover {
+  color: #e11d48;
+}
+
+body.light-theme .box-detail-summary-bar {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+body.light-theme .box-detail-summary-bar strong {
+  color: #0f172a;
+}
+
+body.light-theme .glass-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 body.light-theme .form-control,
 body.light-theme .search-box input,
 body.light-theme .custom-select {
   background-color: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(0, 0, 0, 0.2);
   color: #0f172a;
 }
 
 body.light-theme .data-table th {
   background: #f1f5f9;
-  color: #334155;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  color: #0f172a;
+  font-weight: 700;
+  border-bottom: 2px solid #e2e8f0;
 }
 
 body.light-theme .data-table td {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  color: #0f172a;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+body.light-theme .data-table td strong {
+  color: #0f172a !important;
 }
 
 body.light-theme .status-pills,
 body.light-theme .view-switcher,
-body.light-theme .qty-adjuster,
 body.light-theme .box-item-chip,
 body.light-theme .restock-item {
   background: #f1f5f9;
-  border-color: rgba(0, 0, 0, 0.12);
+  border-color: #cbd5e1;
+}
+
+body.light-theme .qty-adjuster {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+}
+
+body.light-theme .adjust-btn {
+  color: #0f172a;
+}
+body.light-theme .adjust-btn:hover {
+  background: #e2e8f0;
+  color: #0284c7;
+}
+
+body.light-theme .adjust-num {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+body.light-theme .icon-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+body.light-theme .icon-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
 body.light-theme .status-pill.active {
