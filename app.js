@@ -3,15 +3,12 @@
  * Connected to Google Sheets Live Endpoint
  */
 
-// Default Spreadsheet URL and ID
-const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1B4oENM0Ez94YTgqiwtJ2cDheZCfUd-RQzqeSiA84_jc/edit?usp=sharing";
-const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzpKHNvlP2RDyrV8_tyCXYDBb3BSaC-ZUXULhz4_TLyTf0ns2loy91EAcFWGCgESd6Q/exec";
-const STORAGE_KEY_URL = "stock_mgmt_sheet_url";
-const STORAGE_KEY_SCRIPT_URL = "stock_mgmt_script_url";
+// APPLICATION CONSTANTS
 const STORAGE_KEY_DATA = "stock_mgmt_items_cache";
 const STORAGE_KEY_CUSTOM_EDITS = "stock_mgmt_custom_edits";
 const STORAGE_KEY_AUTH = "stock_mgmt_auth_status";
 const STORAGE_KEY_SHORT_URLS = "stock_mgmt_box_shorturls";
+const STORAGE_KEY_THEME = "stock_mgmt_theme";
 const APP_PASSWORD = "Mohiuddin";
 
 // Initial Pre-loaded Dataset Extracted from Google Sheet for Immediate Standalone Loading
@@ -187,14 +184,10 @@ const INITIAL_CACHED_ITEMS = [
 
 // STATE ENGINE
 let currentItems = [];
-let activeSheetUrl = DEFAULT_SHEET_URL;
-let activeScriptUrl = "";
-let activeView = "boxes"; // "table", "grid", "boxes", "analytics" (default to boxes)
+let activeView = "boxes"; // "table", "grid", "boxes", "analytics"
 let activeStatusFilter = "ALL"; // "ALL", "IN_STOCK", "LOW", "OUT"
 let categoryChartInstance = null;
 let boxChartInstance = null;
-
-const STORAGE_KEY_THEME = "stock_mgmt_theme";
 
 // INITIALIZATION
 document.addEventListener("DOMContentLoaded", () => {
@@ -334,90 +327,51 @@ function applyTheme(theme) {
 
 // CONFIG & STORAGE LOGIC
 function loadSavedConfig() {
-  const savedUrl = localStorage.getItem(STORAGE_KEY_URL);
-  if (savedUrl) {
-    activeSheetUrl = savedUrl;
-  }
-  const savedScriptUrl = localStorage.getItem(STORAGE_KEY_SCRIPT_URL);
-  activeScriptUrl = savedScriptUrl || DEFAULT_SCRIPT_URL;
   updateSheetUrlDisplay();
 }
 
 function updateSheetUrlDisplay() {
   const displayEl = document.getElementById("connectedSheetUrlDisplay");
-  const inputEl = document.getElementById("inputSheetUrl");
-  const scriptInputEl = document.getElementById("inputScriptUrl");
   if (displayEl) {
-    displayEl.href = activeSheetUrl;
-    displayEl.textContent = activeSheetUrl;
-  }
-  if (inputEl) {
-    inputEl.value = activeSheetUrl;
-  }
-  if (scriptInputEl) {
-    scriptInputEl.value = activeScriptUrl;
+    displayEl.href = "https://mohiuddinalazad.github.io/stock-management/";
+    displayEl.textContent = "https://mohiuddinalazad.github.io/stock-management/";
   }
 }
 
-// FETCH LIVE DATA FROM GOOGLE SHEETS
-async function fetchOrLoadStockData(forceLive = false) {
-  setSyncStatus("syncing", "Syncing Sheet...");
+// FETCH / LOAD STOCK DATA (STANDALONE JSON + LOCALSTORAGE)
+async function fetchOrLoadStockData() {
+  setSyncStatus("syncing", "Loading Data...");
 
   try {
-    let parsedItems = null;
-
-    // First try fetching directly from Apps Script Web App Endpoint if configured
-    if (activeScriptUrl) {
-      console.log("Fetching live stock data via Apps Script Web App API:", activeScriptUrl);
-      try {
-        const scriptRes = await fetch(activeScriptUrl);
-        if (scriptRes.ok) {
-          const resJson = await scriptRes.json();
-          if (resJson && resJson.items && resJson.items.length > 0) {
-            parsedItems = resJson.items;
-          }
-        }
-      } catch (errScript) {
-        console.warn("Apps Script API fetch error, falling back to CSV URL:", errScript);
-      }
-    }
-
-    // Fallback to CSV parsing from Google Sheet share link if Apps Script not used/failed
-    if (!parsedItems || parsedItems.length === 0) {
-      const csvUrl = getGoogleSheetCsvUrl(activeSheetUrl);
-      console.log("Fetching live Google Sheet CSV from:", csvUrl);
-
-      const response = await fetch(csvUrl);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const csvText = await response.text();
-      parsedItems = parseGoogleSheetCsv(csvText);
-    }
-
-    if (parsedItems && parsedItems.length > 0) {
-      currentItems = mergeWithCustomEdits(parsedItems);
-      localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(currentItems));
-      setSyncStatus("success", activeScriptUrl ? "2-Way Live Connected" : "Live Connected", new Date().toLocaleTimeString());
-      showToast("Successfully synced live stock data!", "success");
-    } else {
-      throw new Error("No valid items parsed from sheet");
-    }
-  } catch (error) {
-    console.warn("Live fetch failed or CORS blocked. Falling back to cached data:", error);
-    
-    // Check local storage cache or fallback to initial dataset
     const cachedData = localStorage.getItem(STORAGE_KEY_DATA);
     if (cachedData) {
       currentItems = JSON.parse(cachedData);
-      setSyncStatus("success", "Cached Data", "Offline");
-      showToast("Loaded stock data from local cache.", "info");
+      consolidateBoxNames(currentItems);
+      setSyncStatus("success", "Local Data Active", new Date().toLocaleTimeString());
+      showToast("Loaded stock data.", "info");
     } else {
-      currentItems = mergeWithCustomEdits(INITIAL_CACHED_ITEMS);
-      setSyncStatus("success", "Preloaded Data", "Default");
-      showToast("Showing pre-loaded component dataset.", "info");
+      const jsonRes = await fetch("stock_data.json");
+      if (jsonRes.ok) {
+        const jsonData = await jsonRes.json();
+        if (jsonData && jsonData.length > 0) {
+          currentItems = mergeWithCustomEdits(jsonData);
+          consolidateBoxNames(currentItems);
+          localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(currentItems));
+          setSyncStatus("success", "JSON Data Active", new Date().toLocaleTimeString());
+          showToast("Loaded stock data from stock_data.json!", "success");
+        } else {
+          throw new Error("Empty JSON");
+        }
+      } else {
+        throw new Error("JSON fetch failed");
+      }
     }
+  } catch (error) {
+    console.warn("Stock data fetch fallback:", error);
+    currentItems = mergeWithCustomEdits(INITIAL_CACHED_ITEMS);
+    consolidateBoxNames(currentItems);
+    setSyncStatus("success", "Preloaded Data", "Default");
+    showToast("Showing pre-loaded component dataset.", "info");
   }
 
   refreshDashboardUI();
@@ -568,6 +522,38 @@ function normalizeBoxName(box) {
   return clean;
 }
 
+// Consolidate short duplicate box names (e.g., "BOX_A-53") into detailed box names (e.g., "BOX_A-53 (RFL) Big Box")
+function consolidateBoxNames(items) {
+  if (!items || items.length === 0) return items;
+
+  const allBoxNames = Array.from(new Set(items.map(i => i.box).filter(Boolean)));
+  const aliasMap = new Map();
+
+  allBoxNames.forEach(box => {
+    const match = box.match(/^(BOX_?[A-Z0-9-]+)\b[\s\(\:_]/i);
+    if (match && match[1]) {
+      const shortPrefix = match[1].trim();
+      const upperPrefix = shortPrefix.toUpperCase();
+      if (!aliasMap.has(upperPrefix) || box.length > aliasMap.get(upperPrefix).length) {
+        aliasMap.set(upperPrefix, box);
+      }
+    }
+  });
+
+  items.forEach(item => {
+    if (!item.box) return;
+    const cleanBox = normalizeBoxName(item.box);
+    const upperBox = cleanBox.toUpperCase();
+    if (aliasMap.has(upperBox) && aliasMap.get(upperBox) !== cleanBox) {
+      item.box = aliasMap.get(upperBox);
+    } else {
+      item.box = cleanBox;
+    }
+  });
+
+  return items;
+}
+
 function mergeWithCustomEdits(items) {
   const editsJson = localStorage.getItem(STORAGE_KEY_CUSTOM_EDITS);
   if (!editsJson) return items;
@@ -593,56 +579,6 @@ function saveCustomEdits() {
   localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(currentItems));
 }
 
-// REAL-TIME AUTO SYNC TO GOOGLE APPS SCRIPT WEB APP
-async function syncItemToGoogleSheet(action, payload) {
-  saveCustomEdits();
-
-  if (!activeScriptUrl) {
-    console.log("Google Apps Script URL not configured. Item saved to browser local storage.");
-    return;
-  }
-
-  setSyncStatus("syncing", "Syncing to Sheet...");
-
-  try {
-    // Construct query parameters for CORS-free GET request to Google Apps Script
-    const cleanPayload = {};
-    Object.keys(payload || {}).forEach(k => {
-      if (payload[k] !== undefined && payload[k] !== null) {
-        cleanPayload[k] = payload[k];
-      }
-    });
-
-    const queryParams = new URLSearchParams({ action, ...cleanPayload }).toString();
-    const fullSyncUrl = `${activeScriptUrl}?${queryParams}`;
-
-    const response = await fetch(fullSyncUrl);
-    const resJson = await response.json();
-
-    if (resJson && resJson.status === "success") {
-      setSyncStatus("success", "Auto-Synced ✓", new Date().toLocaleTimeString());
-      showToast("Auto-synced to Google Sheet! ✓", "success");
-    } else {
-      setSyncStatus("success", "Local Saved", "Sync Alert");
-    }
-  } catch (err) {
-    console.warn("GET sync call error, attempting POST fallback:", err);
-    try {
-      await fetch(activeScriptUrl, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action, ...payload })
-      });
-      setSyncStatus("success", "Auto-Synced ✓", new Date().toLocaleTimeString());
-      showToast("Auto-synced to Google Sheet! ✓", "success");
-    } catch (errPost) {
-      console.warn("Failed to auto-sync to Google Sheet Apps Script:", errPost);
-      setSyncStatus("success", "Local Saved", "Offline");
-    }
-  }
-}
-
 // DASHBOARD RENDERING & FILTERING
 function refreshDashboardUI() {
   populateFilterDropdowns();
@@ -656,7 +592,8 @@ function populateFilterDropdowns() {
   const catDatalist = document.getElementById("categoryDatalist");
   const boxDatalist = document.getElementById("boxDatalist");
 
-  // Normalize item properties
+  // Consolidate duplicate short box names & normalize item properties
+  consolidateBoxNames(currentItems);
   currentItems.forEach(item => {
     if (item.box) item.box = normalizeBoxName(item.box);
     if (item.category) item.category = sanitizeText(item.category);
@@ -1524,37 +1461,29 @@ window.deleteItem = function(id) {
   }
 };
 
-// GOOGLE SHEET MODAL LOGIC
-function openSheetModal() {
-  document.getElementById("sheetUrlModal").classList.remove("hidden");
-}
-function closeSheetModal() {
-  document.getElementById("sheetUrlModal").classList.add("hidden");
-}
-function saveSheetUrlConfig() {
-  const newUrl = document.getElementById("inputSheetUrl").value.trim();
-  const newScriptUrl = document.getElementById("inputScriptUrl").value.trim();
+window.deleteStorageBox = function(boxName) {
+  if (!boxName) return;
+  const itemsInBox = currentItems.filter(i => i.box === boxName);
+  const count = itemsInBox.length;
 
-  if (!newUrl && !newScriptUrl) {
-    showToast("Please enter a valid Google Sheet URL or Script URL", "error");
-    return;
+  const msg = count > 0 
+    ? `Are you sure you want to delete Storage Box "${boxName}"?\n\nThis will remove ${count} component(s) inside this box!`
+    : `Are you sure you want to delete Storage Box "${boxName}"?`;
+
+  if (confirm(msg)) {
+    currentItems = currentItems.filter(i => i.box !== boxName);
+    saveCustomEdits();
+    closeBoxDetailModal();
+    refreshDashboardUI();
+    showToast(`Deleted Storage Box "${boxName}"`, "info");
+    
+    itemsInBox.forEach(item => {
+      syncItemToGoogleSheet("DELETE_ITEM", { name: item.name, box: item.box });
+    });
   }
+};
 
-  if (newUrl) activeSheetUrl = newUrl;
-  activeScriptUrl = newScriptUrl;
 
-  localStorage.setItem(STORAGE_KEY_URL, activeSheetUrl);
-  localStorage.setItem(STORAGE_KEY_SCRIPT_URL, activeScriptUrl);
-
-  updateSheetUrlDisplay();
-  closeSheetModal();
-
-  if (activeScriptUrl) {
-    showToast("Google Apps Script 2-Way Auto Sync Enabled!", "success");
-  }
-
-  fetchOrLoadStockData(true);
-}
 
 // EXPORT MODAL LOGIC
 function openExportModal() {
@@ -1603,13 +1532,9 @@ function copyTsvToClipboard() {
 
 // EVENT LISTENERS SETUP
 function setupEventListeners() {
-  // Sync button
-  document.getElementById("btnSyncNow").addEventListener("click", () => fetchOrLoadStockData(true));
-  document.getElementById("btnOpenSheetUrl").addEventListener("click", openSheetModal);
-  document.getElementById("btnChangeSheetQuick").addEventListener("click", openSheetModal);
-  document.getElementById("btnSaveSheetUrl").addEventListener("click", saveSheetUrlConfig);
-  document.getElementById("btnCloseSheetModal").addEventListener("click", closeSheetModal);
-  document.getElementById("btnCancelSheetModal").addEventListener("click", closeSheetModal);
+  // Reload button
+  const btnReload = document.getElementById("btnSyncNow");
+  if (btnReload) btnReload.addEventListener("click", () => fetchOrLoadStockData());
 
   // Add Item
   document.getElementById("btnAddItem").addEventListener("click", openAddModal);

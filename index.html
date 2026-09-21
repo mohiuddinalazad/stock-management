@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Components Stock Management | Google Sheet Live Dashboard</title>
+  <title>Components Stock Management | Live Dashboard</title>
 
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -220,7 +220,7 @@
       </div>
       <div class="brand-text">
         <h1>Components Stock Management</h1>
-        <p class="brand-subtitle"><i class="fa-brands fa-google-drive"></i> Google Sheet Connected Dashboard</p>
+        <p class="brand-subtitle"><i class="fa-solid fa-layer-group"></i> Components Stock Inventory Dashboard</p>
       </div>
     </div>
 
@@ -232,12 +232,8 @@
         <span class="sync-time" id="lastSyncTime">Just now</span>
       </div>
 
-      <button class="btn btn-primary" id="btnSyncNow" title="Sync live data from Google Sheet">
-        <i class="fa-solid fa-rotate"></i> Sync Live Sheet
-      </button>
-
-      <button class="btn btn-secondary" id="btnOpenSheetUrl" title="Configure Google Sheet Link">
-        <i class="fa-solid fa-link"></i> Sheet Link
+      <button class="btn btn-primary" id="btnSyncNow" title="Reload Stock Data">
+        <i class="fa-solid fa-rotate"></i> Reload Data
       </button>
 
       <button class="btn btn-accent" id="btnAddItem">
@@ -295,19 +291,18 @@
     </div>
   </div>
 
-  <!-- Google Sheet Link Banner Bar -->
+  <!-- Live Web Application Link Banner Bar -->
   <div class="sheet-banner-bar">
     <div class="banner-content">
-      <i class="fa-solid fa-table-cells text-accent"></i>
-      <span class="banner-label">Connected Google Sheet:</span>
-      <a href="https://docs.google.com/spreadsheets/d/1LZhjZ9Fozly7Nnn6G9zXuByWBQUQ2vNRNyJVHaSW7Rc/edit?usp=sharing"
+      <i class="fa-solid fa-globe text-accent"></i>
+      <span class="banner-label">Live Web Application:</span>
+      <a href="https://mohiuddinalazad.github.io/stock-management/"
         target="_blank" id="connectedSheetUrlDisplay" class="sheet-url-link">
-        https://docs.google.com/spreadsheets/d/1LZhjZ9Fozly7Nnn6G9zXuByWBQUQ2vNRNyJVHaSW7Rc/edit
+        https://mohiuddinalazad.github.io/stock-management/
       </a>
     </div>
     <div class="banner-actions">
-      <span class="live-pill"><i class="fa-solid fa-bolt"></i> Live Endpoint</span>
-      <button class="btn-text" id="btnChangeSheetQuick"><i class="fa-solid fa-pen"></i> Edit Link</button>
+      <span class="live-pill"><i class="fa-solid fa-bolt"></i> Live Website</span>
     </div>
   </div>
 
@@ -607,48 +602,7 @@
     </div>
   </div>
 
-  <!-- 1. Google Sheet Link & 2-Way Auto-Sync Modal -->
-  <div class="modal-overlay hidden" id="sheetUrlModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h2><i class="fa-brands fa-google-drive"></i> Configure Google Sheet & Auto-Sync</h2>
-        <button class="modal-close" id="btnCloseSheetModal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p class="modal-desc">Configure your Google Spreadsheet URL for reading and Apps Script Web App URL for automatic 2-way live sync:</p>
-        
-        <div class="form-group">
-          <label for="inputSheetUrl"><i class="fa-solid fa-table"></i> Google Spreadsheet Share URL (Read):</label>
-          <input type="text" id="inputSheetUrl" class="form-control"
-            placeholder="https://docs.google.com/spreadsheets/d/.../edit"
-            value="https://docs.google.com/spreadsheets/d/1LZhjZ9Fozly7Nnn6G9zXuByWBQUQ2vNRNyJVHaSW7Rc/edit">
-        </div>
 
-        <div class="form-group" style="margin-top: 15px;">
-          <label for="inputScriptUrl" style="color: var(--primary-cyan); font-weight: 600;">
-            <i class="fa-solid fa-bolt text-accent"></i> Google Apps Script Web App URL (2-Way Real-time Auto-Save):
-          </label>
-          <input type="text" id="inputScriptUrl" class="form-control"
-            placeholder="https://script.google.com/macros/s/AKfycb.../exec">
-          <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 4px;">
-            Paste the Web App Endpoint URL from Apps Script deployment to enable instant 2-way auto-save directly to Google Sheet.
-          </small>
-        </div>
-
-        <div class="info-callout" style="margin-top: 15px;">
-          <i class="fa-solid fa-circle-info"></i>
-          <div>
-            <strong>How to get Apps Script Web App URL:</strong><br>
-            Open your Google Sheet &rarr; Click <em>Extensions &rarr; Apps Script</em> &rarr; Paste code from <code>google_apps_script.js</code> &rarr; Deploy as <em>Web App</em> (Access: Anyone) &rarr; Copy Web App URL here!
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" id="btnCancelSheetModal">Cancel</button>
-        <button class="btn btn-primary" id="btnSaveSheetUrl"><i class="fa-solid fa-plug"></i> Connect & Save Settings</button>
-      </div>
-    </div>
-  </div>
 
   <!-- 2. Add / Edit Component Modal -->
   <div class="modal-overlay hidden" id="itemModal">
@@ -708,8 +662,7 @@
         <div class="export-options">
           <button class="btn btn-primary" id="btnDownloadCSV"><i class="fa-solid fa-file-csv"></i> Download CSV
             File</button>
-          <button class="btn btn-secondary" id="btnCopyTSV"><i class="fa-solid fa-copy"></i> Copy TSV for Google
-            Sheets</button>
+          <button class="btn btn-secondary" id="btnCopyTSV"><i class="fa-solid fa-copy"></i> Copy TSV for Excel</button>
         </div>
         <div class="form-group" style="margin-top: 15px;">
           <label>CSV Preview:</label>
