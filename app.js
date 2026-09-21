@@ -195,6 +195,16 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function initApp() {
+  // Clear legacy Google Sheets cached data on v2.0 upgrade
+  const currentVersion = "2.0";
+  if (localStorage.getItem("stock_mgmt_version") !== currentVersion) {
+    localStorage.removeItem("stock_mgmt_items_cache");
+    localStorage.removeItem("stock_mgmt_custom_edits");
+    localStorage.removeItem("stock_mgmt_sheet_url");
+    localStorage.removeItem("stock_mgmt_script_url");
+    localStorage.setItem("stock_mgmt_version", currentVersion);
+  }
+
   initTheme();
   setupLockscreen();
   loadSavedConfig();
