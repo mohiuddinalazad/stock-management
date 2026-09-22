@@ -819,6 +819,9 @@ function renderBoxesView() {
             <span style="${isSelectedBox ? 'color: var(--primary-cyan); font-weight: 700;' : ''}">${escapeHtml(boxName)} ${isSelectedBox ? '★ (Selected)' : ''}</span>
           </div>
           <div style="display: flex; gap: 6px; align-items: center;">
+            <button class="icon-btn" onclick="event.stopPropagation(); renameStorageBox('${safeBoxName}')" title="Rename Storage Box '${safeBoxName}'">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
             <button class="icon-btn delete-btn" onclick="event.stopPropagation(); deleteStorageBox('${safeBoxName}')" title="Delete Storage Box '${safeBoxName}'">
               <i class="fa-solid fa-trash-can"></i>
             </button>
@@ -1460,6 +1463,47 @@ window.deleteStorageBox = function(boxName) {
   }
 };
 
+window.renameStorageBox = function(oldBoxName) {
+  if (!oldBoxName) return;
+
+  const inputName = prompt(`Enter new name for Storage Box "${oldBoxName}":`, oldBoxName);
+  if (inputName === null) return;
+
+  const newBoxName = normalizeBoxName(inputName.trim());
+  if (!newBoxName) {
+    showToast("Storage Box name cannot be empty", "error");
+    return;
+  }
+
+  if (newBoxName === oldBoxName) return;
+
+  const existingItemsInTarget = currentItems.filter(i => i.box === newBoxName);
+  if (existingItemsInTarget.length > 0) {
+    const confirmMerge = confirm(
+      `A Storage Box named "${newBoxName}" already exists.\n\nDo you want to merge all components from "${oldBoxName}" into "${newBoxName}"?`
+    );
+    if (!confirmMerge) return;
+  }
+
+  let count = 0;
+  currentItems.forEach(item => {
+    if (item.box === oldBoxName) {
+      item.box = newBoxName;
+      count++;
+    }
+  });
+
+  saveCustomEdits();
+
+  if (typeof activeDetailBoxName !== "undefined" && activeDetailBoxName === oldBoxName) {
+    activeDetailBoxName = newBoxName;
+    openBoxDetailModal(newBoxName);
+  }
+
+  refreshDashboardUI();
+  showToast(`Renamed Storage Box "${oldBoxName}" to "${newBoxName}" (${count} items updated)`, "success");
+};
+
 
 
 // EXPORT MODAL LOGIC
@@ -1591,7 +1635,7 @@ function setupEventListeners() {
   // Box Detail Modal
   const btnCloseDetail = document.getElementById("btnCloseBoxDetailModal");
   const btnCloseDetailBtn = document.getElementById("btnCloseBoxDetailModalBtn");
-  const btnDetailAddItem = document.getElementById("btnBoxDetailAddItem");
+  const btnDetailRenameBox = document.getElementById("btnBoxDetailRenameBox");
   const btnDetailDeleteBox = document.getElementById("btnBoxDetailDeleteBox");
   const btnDetailQR = document.getElementById("btnBoxDetailQR");
 
@@ -1607,6 +1651,11 @@ function setupEventListeners() {
   if (btnDetailQR) {
     btnDetailQR.addEventListener("click", () => {
       openQrModal(activeDetailBoxName);
+    });
+  }
+  if (btnDetailRenameBox) {
+    btnDetailRenameBox.addEventListener("click", () => {
+      renameStorageBox(activeDetailBoxName);
     });
   }
   if (btnDetailDeleteBox) {
