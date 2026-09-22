@@ -175,7 +175,7 @@ function updateItemQuantity(sheet, data, targetName, newQty, boxName, catName) {
       if (set.nameCol < row.length) {
         const nameInCell = String(row[set.nameCol] || "").trim();
         const boxInCell = String(row[set.boxCol] || "").trim();
-        
+
         const nameMatches = nameInCell.toLowerCase() === targetLower;
         const boxMatches = !boxLower || boxInCell.toLowerCase() === boxLower || !boxInCell;
 
@@ -218,7 +218,7 @@ function editItemInSheet(sheet, data, oldName, newName, category, box, qty) {
       if (set.nameCol < row.length) {
         const nameInCell = String(row[set.nameCol] || "").trim();
         const boxInCell = String(row[set.boxCol] || "").trim();
-        
+
         const nameMatches = nameInCell.toLowerCase() === targetLower;
         const boxMatches = !boxLower || boxInCell.toLowerCase() === boxLower || !boxInCell;
 
@@ -281,10 +281,10 @@ function deleteItemFromSheet(sheet, data, targetName, boxName) {
 function populateInitialData() {
   const sheet = getTargetSheet();
   sheet.clear(); // Clear existing content
-  
+
   // Set header row
   sheet.appendRow(["Storage Box", "Category", "Component Name", "Quantity"]);
-  
+
   // Format header row (Bold blue background)
   const headerRange = sheet.getRange(1, 1, 1, 4);
   headerRange.setFontWeight("bold");
