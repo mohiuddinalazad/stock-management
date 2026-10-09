@@ -450,14 +450,18 @@ function setupFirebaseRealtimeSync() {
 function syncAllToFirebase(items) {
   if (!db || !items || items.length === 0) return;
   try {
-    const batch = db.batch();
-    items.forEach(item => {
-      const docRef = db.collection("items").doc(String(item.id));
-      batch.set(docRef, item, { merge: true });
-    });
-    batch.commit().then(() => {
-      console.log("Firebase Firestore dataset synced successfully!");
-    }).catch(e => console.warn("Firebase batch sync notice:", e));
+    const chunkSize = 450;
+    for (let i = 0; i < items.length; i += chunkSize) {
+      const chunk = items.slice(i, i + chunkSize);
+      const batch = db.batch();
+      chunk.forEach(item => {
+        if (item && item.id) {
+          const docRef = db.collection("items").doc(String(item.id));
+          batch.set(docRef, item, { merge: true });
+        }
+      });
+      batch.commit().catch(e => console.warn("Firebase chunk commit notice:", e));
+    }
   } catch (e) {
     console.warn("Firebase batch exception:", e);
   }
@@ -642,10 +646,17 @@ function mergeWithCustomEdits(baseItems) {
 }
 
 function saveCustomEdits() {
-  localStorage.setItem(STORAGE_KEY_CUSTOM_EDITS, JSON.stringify(currentItems));
-  localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(currentItems));
+  try {
+    localStorage.setItem(STORAGE_KEY_CUSTOM_EDITS, JSON.stringify(currentItems));
+    localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(currentItems));
+  } catch (e) {
+    console.warn("localStorage save notice:", e);
+  }
+
   if (db && currentItems.length > 0) {
-    syncAllToFirebase(currentItems);
+    setTimeout(() => {
+      syncAllToFirebase(currentItems);
+    }, 0);
   }
 }
 
@@ -1508,9 +1519,16 @@ function saveItemForm(e) {
   const pillAll = document.querySelector('.pill[data-status="ALL"]');
   if (pillAll) pillAll.classList.add("active");
 
-  saveCustomEdits();
+  // Close modal window & refresh UI immediately for 0-delay instant response
   closeItemModal();
   refreshDashboardUI();
+
+  // Persist to localStorage and sync to Firebase safely in background
+  try {
+    saveCustomEdits();
+  } catch (err) {
+    console.warn("Save edits notice:", err);
+  }
 }
 
 window.deleteItem = function(id) {
