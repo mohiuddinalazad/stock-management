@@ -192,9 +192,13 @@ let categoryChartInstance = null;
 let boxChartInstance = null;
 
 // INITIALIZATION
-document.addEventListener("DOMContentLoaded", () => {
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    initApp();
+  });
+} else {
   initApp();
-});
+}
 
 function initApp() {
   const currentVersion = "3.1";
