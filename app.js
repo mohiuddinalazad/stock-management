@@ -11,6 +11,27 @@ const STORAGE_KEY_SHORT_URLS = "stock_mgmt_box_shorturls";
 const STORAGE_KEY_THEME = "stock_mgmt_theme";
 const APP_PASSWORD = "Mohiuddin";
 
+// FIREBASE REALTIME CLOUD DATABASE CONFIGURATION
+const firebaseConfig = {
+  apiKey: "AIzaSyCO5M9z5yNFONgvpP0NVCbcQ3eZTFczuSw",
+  authDomain: "nanochip-stock-management.firebaseapp.com",
+  projectId: "nanochip-stock-management",
+  storageBucket: "nanochip-stock-management.firebasestorage.app",
+  messagingSenderId: "98065518276",
+  appId: "1:98065518276:web:63b40b298595a57f09c391",
+  measurementId: "G-6DNZ1D05K3"
+};
+
+let db = null;
+if (typeof firebase !== "undefined") {
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+  } catch (e) {
+    console.warn("Firebase Init Notice:", e);
+  }
+}
+
 // Initial Pre-loaded Dataset Extracted from Google Sheet for Immediate Standalone Loading
 const INITIAL_CACHED_ITEMS = [
   { id: '1', name: 'HUF Seader TAG', category: 'PROJECTS', box: 'BOX_A-65 (RFL.B) METAL', qty: 5 },
@@ -181,7 +202,8 @@ const INITIAL_CACHED_ITEMS = [
   { id: '166', name: 'ACS-712 Current Sensor Module', category: 'Sensor', box: 'BOX_A-53 (RFL-MODULE)', qty: 5 },
   { id: '167', name: 'NE555 SMD', category: 'IC', box: 'BOX_A-54 (RFL) SMD_BOX', qty: 4 },
   { id: '168', name: 'M24256 EEPROM', category: 'EEPROM', box: 'BOX_A-55 (Lira) GPS/GSM', qty: 2 },
-  { id: '169', name: 'GPS NEO 6M', category: 'GPS', box: 'BOX_A-55 (Lira) GPS/GSM', qty: 0 }
+  { id: '169', name: 'GPS NEO 6M', category: 'GPS', box: 'BOX_A-55 (Lira) GPS/GSM', qty: 0 },
+  { id: '170', name: 'AC Cot', category: 'Connector', box: 'BOX_A-66 (AC_CABLE)', qty: 18 }
 ];
 
 // STATE ENGINE
@@ -211,6 +233,7 @@ function initApp() {
   loadSavedConfig();
   setupEventListeners();
   fetchOrLoadStockData();
+  setupFirebaseRealtimeSync();
 }
 
 // SECURITY & LOCKSCREEN LOGIC
@@ -397,6 +420,49 @@ async function fetchOrLoadStockData() {
   }
 }
 
+// FIREBASE CLOUD FIRESTORE REALTIME AUTO-SYNC ENGINE
+function setupFirebaseRealtimeSync() {
+  if (!db) return;
+
+  db.collection("items").onSnapshot((snapshot) => {
+    if (snapshot && !snapshot.empty) {
+      const liveItems = [];
+      snapshot.forEach(doc => {
+        liveItems.push(doc.data());
+      });
+      if (liveItems.length > 0) {
+        currentItems = liveItems;
+        consolidateBoxNames(currentItems);
+        localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(currentItems));
+        localStorage.setItem(STORAGE_KEY_CUSTOM_EDITS, JSON.stringify(currentItems));
+        setSyncStatus("success", "Firebase Live Active", new Date().toLocaleTimeString());
+        refreshDashboardUI();
+      }
+    } else {
+      // First run: Seed Cloud Firestore with initial dataset
+      syncAllToFirebase(currentItems);
+    }
+  }, (err) => {
+    console.warn("Firebase Realtime Listener Notice:", err);
+  });
+}
+
+function syncAllToFirebase(items) {
+  if (!db || !items || items.length === 0) return;
+  try {
+    const batch = db.batch();
+    items.forEach(item => {
+      const docRef = db.collection("items").doc(String(item.id));
+      batch.set(docRef, item, { merge: true });
+    });
+    batch.commit().then(() => {
+      console.log("Firebase Firestore dataset synced successfully!");
+    }).catch(e => console.warn("Firebase batch sync notice:", e));
+  } catch (e) {
+    console.warn("Firebase batch exception:", e);
+  }
+}
+
 function checkUrlParamsForBox() {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -578,6 +644,9 @@ function mergeWithCustomEdits(baseItems) {
 function saveCustomEdits() {
   localStorage.setItem(STORAGE_KEY_CUSTOM_EDITS, JSON.stringify(currentItems));
   localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(currentItems));
+  if (db && currentItems.length > 0) {
+    syncAllToFirebase(currentItems);
+  }
 }
 
 // DASHBOARD RENDERING & FILTERING
