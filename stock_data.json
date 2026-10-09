@@ -1116,49 +1116,49 @@
     "id": "160",
     "name": "Arduino Nano",
     "category": "Arduino",
-    "box": "BOX_A-53 (RFL) Big Box",
+    "box": "BOX_A-53 (RFL-MODULE)",
     "qty": 7
   },
   {
     "id": "161",
     "name": "Gas Sensor MQ2",
     "category": "Sensor",
-    "box": "BOX_A-53 (RFL) Big Box",
+    "box": "BOX_A-53 (RFL-MODULE)",
     "qty": 4
   },
   {
     "id": "162",
     "name": "3S BMS 40A",
     "category": "BMS",
-    "box": "BOX_A-53 (RFL) Big Box",
+    "box": "BOX_A-53 (RFL-MODULE)",
     "qty": 1
   },
   {
     "id": "163",
     "name": "ESP32 Dev Kit Module V1",
     "category": "ESP",
-    "box": "BOX_A-53 (RFL) Big Box",
+    "box": "BOX_A-53 (RFL-MODULE)",
     "qty": 2
   },
   {
     "id": "164",
     "name": "L298N Motor Driver Module",
     "category": "Motor Driver",
-    "box": "BOX_A-53 (RFL) Big Box",
+    "box": "BOX_A-53 (RFL-MODULE)",
     "qty": 5
   },
   {
     "id": "165",
     "name": "RFID-RC522 Module",
     "category": "RFID",
-    "box": "BOX_A-53 (RFL) Big Box",
+    "box": "BOX_A-53 (RFL-MODULE)",
     "qty": 2
   },
   {
     "id": "166",
     "name": "ACS-712 Current Sensor Module",
     "category": "Sensor",
-    "box": "BOX_A-53 (RFL) Big Box",
+    "box": "BOX_A-53 (RFL-MODULE)",
     "qty": 5
   },
   {
