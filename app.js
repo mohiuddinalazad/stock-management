@@ -185,7 +185,7 @@ const INITIAL_CACHED_ITEMS = [
 ];
 
 // STATE ENGINE
-let currentItems = [];
+let currentItems = mergeWithCustomEdits(INITIAL_CACHED_ITEMS);
 let activeView = "boxes"; // "table", "grid", "boxes", "analytics"
 let activeStatusFilter = "ALL"; // "ALL", "IN_STOCK", "LOW", "OUT"
 let categoryChartInstance = null;
