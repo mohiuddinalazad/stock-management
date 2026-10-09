@@ -1647,6 +1647,7 @@ function setupEventListeners() {
   // Box Detail Modal
   const btnCloseDetail = document.getElementById("btnCloseBoxDetailModal");
   const btnCloseDetailBtn = document.getElementById("btnCloseBoxDetailModalBtn");
+  const btnDetailAddItem = document.getElementById("btnBoxDetailAddItem");
   const btnDetailRenameBox = document.getElementById("btnBoxDetailRenameBox");
   const btnDetailDeleteBox = document.getElementById("btnBoxDetailDeleteBox");
   const btnDetailQR = document.getElementById("btnBoxDetailQR");
