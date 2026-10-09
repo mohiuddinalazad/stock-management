@@ -349,40 +349,48 @@ function updateSheetUrlDisplay() {
 async function fetchOrLoadStockData() {
   setSyncStatus("syncing", "Loading Data...");
 
+  // 1. Immediate Synchronous/Instant Load from Local Cache or Preloaded Dataset
+  let loadedFromLocal = false;
   try {
     const cachedData = localStorage.getItem(STORAGE_KEY_DATA);
     if (cachedData) {
-      currentItems = JSON.parse(cachedData);
-      consolidateBoxNames(currentItems);
-      setSyncStatus("success", "Local Data Active", new Date().toLocaleTimeString());
-      showToast("Loaded stock data.", "info");
-    } else {
-      const jsonRes = await fetch("stock_data.json");
-      if (jsonRes.ok) {
-        const jsonData = await jsonRes.json();
-        if (jsonData && jsonData.length > 0) {
-          currentItems = mergeWithCustomEdits(jsonData);
-          consolidateBoxNames(currentItems);
-          localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(currentItems));
-          setSyncStatus("success", "JSON Data Active", new Date().toLocaleTimeString());
-          showToast("Loaded stock data from stock_data.json!", "success");
-        } else {
-          throw new Error("Empty JSON");
-        }
-      } else {
-        throw new Error("JSON fetch failed");
+      const parsed = JSON.parse(cachedData);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        currentItems = parsed;
+        loadedFromLocal = true;
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to parse cached stock data:", e);
+  }
+
+  // If local cache is missing or empty array, fallback to preloaded dataset instantly
+  if (!loadedFromLocal || !currentItems || currentItems.length === 0) {
+    currentItems = mergeWithCustomEdits(INITIAL_CACHED_ITEMS);
+    localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(currentItems));
+  }
+
+  consolidateBoxNames(currentItems);
+  setSyncStatus("success", "Local Data Active", new Date().toLocaleTimeString());
+  refreshDashboardUI();
+  checkUrlParamsForBox();
+
+  // 2. Asynchronously fetch fresh data from stock_data.json on server to get latest updates
+  try {
+    const jsonRes = await fetch(`stock_data.json?v=${Date.now()}`);
+    if (jsonRes.ok) {
+      const jsonData = await jsonRes.json();
+      if (Array.isArray(jsonData) && jsonData.length > 0) {
+        currentItems = mergeWithCustomEdits(jsonData);
+        consolidateBoxNames(currentItems);
+        localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(currentItems));
+        setSyncStatus("success", "Live Data Active", new Date().toLocaleTimeString());
+        refreshDashboardUI();
       }
     }
   } catch (error) {
-    console.warn("Stock data fetch fallback:", error);
-    currentItems = mergeWithCustomEdits(INITIAL_CACHED_ITEMS);
-    consolidateBoxNames(currentItems);
-    setSyncStatus("success", "Preloaded Data", "Default");
-    showToast("Showing pre-loaded component dataset.", "info");
+    console.warn("Background fetch stock_data.json notice:", error);
   }
-
-  refreshDashboardUI();
-  checkUrlParamsForBox();
 }
 
 function checkUrlParamsForBox() {
